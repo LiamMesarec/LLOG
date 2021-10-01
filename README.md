@@ -34,3 +34,5 @@ int main()
     llog::Print("the end");
 }
 ```
+
+Also supports STL Containers such as std::vector, std::array etc. They are in the same category as C arrays.
