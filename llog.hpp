@@ -13,9 +13,9 @@
 #include <fstream>
 #include <source_location>
 
-#if defined(_WIN32) && defined(PRINT_COLORS_ENABLED)
+#if defined(_WIN32) && defined(LLOG_COLORS_ENABLED)
     #include "windows.h"
-    #define PRINT_COLOR_WINDOWS
+    #define LLOG_COLOR_WINDOWS
 #endif
 
 namespace llog
@@ -49,13 +49,13 @@ namespace llog
 
     enum class Color
     {
-        #ifdef PRINT_COLOR_WINDOWS
+        #ifdef LLOG_COLOR_WINDOWS
             BLACK = 0x00, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, WHITE, GREY, LIGHT_BLUE, 
             LIGHT_GREEN, LIGHT_CYAN, LIGHT_RED, LIGHT_MAGENTA, YELLOW, HIGH_INTENSITY_WHITE, DEFAULT      
         #endif
 
-        #if !defined(PRINT_COLOR_WINDOWS)
-            BdLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, HIGH_INTENSITY_WHITE, DEFAULT 
+        #if !defined(LLOG_COLOR_WINDOWS)
+            BLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, HIGH_INTENSITY_WHITE, DEFAULT 
         #endif
     };
 
@@ -83,19 +83,19 @@ namespace llog
             .end = "\n",
         };
 
-        #ifdef PRINT_ENABLED
-            #if defined(PRINT_COLOR_WINDOWS) && defined(PRINT_COLORS_ENABLED)
+        #ifdef LLOG_ENABLED
+            #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
                 const HANDLE m_WindowsConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
             #endif
 
             Color m_defaultColor = Color::HIGH_INTENSITY_WHITE;
             void SetColor([[maybe_unused]]Color color = m_defaultColor)
             {
-                #if defined(PRINT_COLOR_WINDOWS) && defined(PRINT_COLORS_ENABLED)
+                #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
                     SetConsoleTextAttribute(m_WindowsConsoleHandle, static_cast<int>(color));
                 #endif
 
-                #if !defined(PRINT_COLOR_WINDOWS) && defined(PRINT_COLORS_ENABLED)
+                #if !defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
                     std::cout << "\033[" << static_cast<int>(color) << "m";
                 #endif
             }
@@ -105,10 +105,10 @@ namespace llog
     
     void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]const Container auto& arr)
     {
-        #ifdef PRINT_ENABLED
+        #ifdef LLOG_ENABLED
             for(auto&& x : arr)
             {
-                std::cout << x << " ";
+                std::cout << x << ' ';
             }
             std::cout << pt.delimiter;    
         #endif 
@@ -116,7 +116,7 @@ namespace llog
 
     void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]const Container auto& arg, [[maybe_unused]]const Container auto&... args)
     {
-        #ifdef PRINT_ENABLED
+        #ifdef LLOG_ENABLED
             SetColor(pt.color);
 
             if(firstArg == false)
@@ -148,7 +148,7 @@ namespace llog
 
     void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]Printable auto&& arg, [[maybe_unused]]Printable auto&&... args)
     {
-        #ifdef PRINT_ENABLED
+        #ifdef LLOG_ENABLED
             SetColor(pt.color);
 
             std::cout << pt.start << std::forward<decltype(arg)>(arg);
@@ -166,7 +166,7 @@ namespace llog
 
     void PrintToFile([[maybe_unused]]std::ofstream& ofs, [[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]Printable auto&& arg, [[maybe_unused]]Printable  auto&&... args)
     {
-        #ifdef PRINT_ENABLED
+        #ifdef LLOG_ENABLED
             ofs << pt.start << std::forward<decltype(arg)>(arg);
             ((ofs << pt.delimiter << std::forward<decltype(args)>(args)), ...);
             ofs << pt.end;
@@ -186,7 +186,7 @@ namespace llog
 
     void PrintFromFile([[maybe_unused]]std::ifstream& ifs)
     {
-        #ifdef PRINT_ENABLED
+        #ifdef LLOG_ENABLED
             if(ifs.is_open()) 
             {
                 std::cout << ifs.rdbuf();
