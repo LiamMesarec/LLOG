@@ -1,7 +1,7 @@
 # LLOG
 A C++20 std::cout wrapper.
 
-LLOG is a header-only simple to use library that provides function wrappers for std::cout. Also adds colors on Windows and Linux (and other systems that support ANSI Escape Codes).
+LLOG is a header-only simple to use library that provides function wrappers for std::cout. Also adds colors on Windows and Linux (and other systems that support ANSI Escape Codes). Very lightweight with a very low performance difference to just using std::cout.
 
 EXAMPLE USAGE: 
 
