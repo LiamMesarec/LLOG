@@ -6,8 +6,8 @@ LLOG is a header-only simple to use library that provides function wrappers for 
 EXAMPLE USAGE: 
 
 ```cpp
-#define PRINT_ENABLED
-#define PRINT_COLORS_ENABLED
+#define LLOG_ENABLED
+#define LLOG_COLORS_ENABLED
 #include "llog.hpp"
 
 int main()
