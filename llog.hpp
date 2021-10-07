@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <source_location>
+#include <algorithm>
 
 #if defined(_WIN32) && defined(LLOG_COLORS_ENABLED)
     #include "windows.h"
@@ -20,11 +21,14 @@
 
 namespace llog
 {
-    template<typename T, typename ... U>
+    template<typename T, typename ...U>
     concept IsAnyOf = (std::same_as<T, U> || ...);
 
     template<typename T>
     concept Iterable = std::forward_iterator<typename T::const_iterator>;
+
+    template<typename T>
+    concept Iterator = std::forward_iterator<T>;
 
     template<typename T>
     concept Numeric = std::floating_point<T> || std::integral<T>;
@@ -36,10 +40,13 @@ namespace llog
     concept Array = std::is_array_v<std::remove_reference_t<T>>;
 
     template<typename T>
-    concept CanBeCout = requires (T x) { std::cout << x; };
+    concept Outputable = requires (T x) { std::cout << x; };
 
     template<typename T>
-    concept Printable = CanBeCout<T> && (!Array<T> || String<T>);
+    concept Inputable = requires (T x) { std::cin >> x; };
+
+    template<typename T>
+    concept Printable = Outputable<T> && (!Array<T> || String<T>);
 
     template<typename T>
     concept NotString = !String<T>;
@@ -83,62 +90,78 @@ namespace llog
             .end = "\n",
         };
 
-        #ifdef LLOG_ENABLED
-            #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
-                const HANDLE m_WindowsConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED) && defined(LLOG_ENABLED)
+            const HANDLE m_WindowsConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        #endif
+
+        Color m_defaultColor = Color::HIGH_INTENSITY_WHITE;
+        void SetColor([[maybe_unused]]Color color = m_defaultColor)
+        {
+            #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED) && defined(LLOG_ENABLED)
+                SetConsoleTextAttribute(m_WindowsConsoleHandle, static_cast<int>(color));
             #endif
 
-            Color m_defaultColor = Color::HIGH_INTENSITY_WHITE;
-            void SetColor([[maybe_unused]]Color color = m_defaultColor)
-            {
-                #if defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
-                    SetConsoleTextAttribute(m_WindowsConsoleHandle, static_cast<int>(color));
-                #endif
+            #if !defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED) && defined(LLOG_ENABLED)
+                std::cout << "\033[" << static_cast<int>(color) << "m";
+            #endif
+        }
 
-                #if !defined(LLOG_COLOR_WINDOWS) && defined(LLOG_COLORS_ENABLED)
-                    std::cout << "\033[" << static_cast<int>(color) << "m";
-                #endif
-            }
-            bool firstArg = false;
+        bool firstArg = false;
+
+        #ifdef LLOG_ENABLED
+            auto print = [](const auto& ...x) { (std::cout << ... << x); };
+            auto printWithSpace = []([[maybe_unused]]const auto& ...x) { ((std::cout << x << ' '), ...); };
+            auto input = [](auto& type, auto& ...x) { (type >> ... >> x); };
+        #endif
+
+        #if !defined(LLOG_ENABLED)
+            auto print = []([[maybe_unused]]const auto& ...x) { };
+            auto printWithSpace = []([[maybe_unused]]const auto& x) { };
+            auto input = []([[maybe_unused]]auto& type, [[maybe_unused]]auto& ...x) { };
         #endif
     }
-    
-    void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]const Container auto& arr)
+
+    void Print(const PrintTemplate& pt, const Container auto& arr)
     {
-        #ifdef LLOG_ENABLED
-            for(auto&& x : arr)
-            {
-                std::cout << x << ' ';
-            }
-            std::cout << pt.delimiter;    
-        #endif 
+        SetColor(pt.color);
+
+        if(!firstArg)
+        {
+            print(pt.start);
+        }
+
+        std::ranges::for_each(arr, printWithSpace);
+
+        if(!firstArg)
+        {
+            print(pt.end);
+        }
     }
 
-    void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]const Container auto& arg, [[maybe_unused]]const Container auto&... args)
+    void Print(const PrintTemplate& pt, const Container auto& arg, const Container auto&... args)
     {
-        #ifdef LLOG_ENABLED
-            SetColor(pt.color);
+        SetColor(pt.color);
 
-            if(firstArg == false)
-            {
-                firstArg = true;
-                std::cout << pt.start;
-            }
-    
-            if constexpr(sizeof...(args) > 0)
-            {
-                Print(pt, arg);
-                Print(pt, args...);
-            }
+        if(!firstArg)
+        {
+            firstArg = true;
+            print(pt.start);
+        }
 
-            if constexpr(sizeof...(args) == 1)
-            {
-                std::cout << pt.end;
-                firstArg = false;
-            }
+        if constexpr(sizeof...(args) > 0)
+        {
+            Print(pt, arg);
+            print(pt.delimiter);
+            Print(pt, args...);
+        }
 
-            SetColor();
-        #endif
+        if constexpr(sizeof...(args) == 1)
+        {
+            print(pt.end);
+            firstArg = false;
+        }
+
+        SetColor();
     }
 
     void Print(const Container auto& arg, const Container auto&... args)
@@ -146,17 +169,15 @@ namespace llog
         Print(m_arrayTemplate, arg, args...);
     }
 
-    void Print([[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]Printable auto&& arg, [[maybe_unused]]Printable auto&&... args)
+    void Print(const PrintTemplate& pt, Printable auto&& arg, Printable auto&&... args)
     {
-        #ifdef LLOG_ENABLED
-            SetColor(pt.color);
+        SetColor(pt.color);
 
-            std::cout << pt.start << std::forward<decltype(arg)>(arg);
-            ((std::cout << pt.delimiter << std::forward<decltype(args)>(args)), ...);
-            std::cout << pt.end;
+        print(pt.start, arg);
+        (print(pt.delimiter, args), ...);
+        print(pt.end);
 
-            SetColor();
-        #endif
+        SetColor();
     }
 
     void Print(Printable auto&& arg, Printable auto&&... args)
@@ -164,11 +185,42 @@ namespace llog
         Print(m_printTemplate, arg, args...);
     }
 
+    void Print(const PrintTemplate& pt, Iterator auto& itBegin, Iterator auto& itEnd)
+    {
+        SetColor(pt.color);
+
+        print(pt.start);
+        for(;itBegin != itEnd; ++itBegin)
+        {
+            print(*itBegin, pt.delimiter);
+        }
+        print(pt.end);
+
+        SetColor();   
+    }
+
+    void Print(Iterator auto itBegin, Iterator auto itEnd)
+    {
+        Print(m_printTemplate, itBegin, itEnd);
+    }
+
+    void Input(Inputable auto&... args)
+    {
+        input(std::cin, args...);
+    }
+    
+    template<typename ...Args>
+    void InputLine(std::istream& input, Args&... args)
+        requires (std::same_as<Args, std::string> && ...)
+    {
+        (std::getline(input, args), ...);
+    }
+
     void PrintToFile([[maybe_unused]]std::ofstream& ofs, [[maybe_unused]]const PrintTemplate& pt, [[maybe_unused]]Printable auto&& arg, [[maybe_unused]]Printable  auto&&... args)
     {
         #ifdef LLOG_ENABLED
-            ofs << pt.start << std::forward<decltype(arg)>(arg);
-            ((ofs << pt.delimiter << std::forward<decltype(args)>(args)), ...);
+            ofs << pt.start << arg;
+            ((ofs << pt.delimiter << args), ...);
             ofs << pt.end;
         #endif
     }
