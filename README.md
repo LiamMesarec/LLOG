@@ -35,4 +35,4 @@ int main()
 }
 ```
 
-Also supports STL Containers such as std::vector, std::array etc. They are in the same category as C arrays.
+Also supports STL Containers such as std::vector, std::array etc.
