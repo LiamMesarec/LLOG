@@ -57,12 +57,12 @@ namespace llog
     enum class Color
     {
         #ifdef LLOG_COLOR_WINDOWS
-            BLACK = 0x00, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, WHITE, GREY, LIGHT_BLUE, 
-            LIGHT_GREEN, LIGHT_CYAN, LIGHT_RED, LIGHT_MAGENTA, YELLOW, HIGH_INTENSITY_WHITE, DEFAULT      
+            BLACK = 0x00, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, WHITE, GREY, LIGHT_BLUE,
+            LIGHT_GREEN, LIGHT_CYAN, LIGHT_RED, LIGHT_MAGENTA, YELLOW, HIGH_INTENSITY_WHITE, DEFAULT
         #endif
 
         #if !defined(LLOG_COLOR_WINDOWS)
-            BLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, HIGH_INTENSITY_WHITE, DEFAULT 
+            BLACK = 30, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, HIGH_INTENSITY_WHITE, DEFAULT
         #endif
     };
 
@@ -71,10 +71,10 @@ namespace llog
         const char* start;
         const char* delimiter;
         const char* end;
-        Color color = Color::HIGH_INTENSITY_WHITE;   
+        Color color = Color::HIGH_INTENSITY_WHITE;
     };
 
-    namespace 
+    namespace
     {
         PrintTemplate m_printTemplate
         {
@@ -196,7 +196,7 @@ namespace llog
         }
         print(pt.end);
 
-        SetColor();   
+        SetColor();
     }
 
     void Print(Iterator auto itBegin, Iterator auto itEnd)
@@ -208,7 +208,7 @@ namespace llog
     {
         input(std::cin, args...);
     }
-    
+
     template<typename ...Args>
     void InputLine(std::istream& input, Args&... args)
         requires (std::same_as<Args, std::string> && ...)
@@ -236,34 +236,34 @@ namespace llog
         PrintToFile(ofs, m_printTemplate, arg, args...);
     }
 
-    void PrintFromFile([[maybe_unused]]std::ifstream& ifs)
+    inline void PrintFromFile([[maybe_unused]]std::ifstream& ifs)
     {
         #ifdef LLOG_ENABLED
-            if(ifs.is_open()) 
+            if(ifs.is_open())
             {
                 std::cout << ifs.rdbuf();
             }
         #endif
     }
 
-    void PrintFromFile(const std::filesystem::path& path)
+    inline void PrintFromFile(const std::filesystem::path& path)
     {
         std::ifstream ifs(path);
         PrintFromFile(ifs);
     }
 
-    [[nodiscard]]std::string Location(const std::source_location& location = std::source_location::current())
+    [[nodiscard]]inline std::string Location(const std::source_location& location = std::source_location::current())
     {
-        return "[FILE: " 
-                + std::string(location.file_name()) 
-                + " LINE: " 
-                + std::to_string(location.line())  
+        return "[FILE: "
+                + std::string(location.file_name())
+                + " LINE: "
+                + std::to_string(location.line())
                 + "] ";
     }
 
     namespace pt
     {
-        PrintTemplate error 
+        constexpr PrintTemplate error
         {
             .start = "Error: ",
             .delimiter = " ",
@@ -271,7 +271,7 @@ namespace llog
             .color = Color::RED
         };
 
-        PrintTemplate warning 
+        constexpr PrintTemplate warning
         {
             .start = "Warning: ",
             .delimiter = " ",
@@ -279,12 +279,12 @@ namespace llog
             .color = Color::YELLOW
         };
 
-        PrintTemplate message 
+        constexpr PrintTemplate message
         {
             .start = "Message: ",
             .delimiter = " ",
             .end = "\n",
             .color = Color::GREEN
-        };      
+        };
     }
 }
