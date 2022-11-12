@@ -68,6 +68,7 @@ namespace llog
 
     struct PrintTemplate
     {
+        std::ostream* os;
         const char* start;
         const char* delimiter;
         const char* end;
@@ -78,6 +79,7 @@ namespace llog
     {
         PrintTemplate m_printTemplate
         {
+            .os = &std::cout,
             .start = "",
             .delimiter = " ",
             .end = "\n",
@@ -85,6 +87,7 @@ namespace llog
 
         PrintTemplate m_arrayTemplate
         {
+            .os = &std::cout,
             .start = "",
             .delimiter = "\n",
             .end = "\n",
@@ -109,7 +112,7 @@ namespace llog
         bool firstArg = false;
 
         #ifdef LLOG_ENABLED
-            auto print = [](const auto& ...x) { (std::cout << ... << x); };
+            auto print = [](std::ostream* os, const auto& ...x) { (*os << ... << x); };
             auto printWithSpace = []([[maybe_unused]]const auto& ...x) { ((std::cout << x << ' '), ...); };
             auto input = [](auto& type, auto& ...x) { (type >> ... >> x); };
         #endif
@@ -127,14 +130,14 @@ namespace llog
 
         if(!firstArg)
         {
-            print(pt.start);
+            print(pt.os, pt.start);
         }
 
         std::ranges::for_each(arr, printWithSpace);
 
         if(!firstArg)
         {
-            print(pt.end);
+            print(pt.os, pt.end);
         }
     }
 
@@ -145,19 +148,19 @@ namespace llog
         if(!firstArg)
         {
             firstArg = true;
-            print(pt.start);
+            print(pt.os, pt.start);
         }
 
         if constexpr(sizeof...(args) > 0)
         {
             Print(pt, arg);
-            print(pt.delimiter);
+            print(pt.os, pt.delimiter);
             Print(pt, args...);
         }
 
         if constexpr(sizeof...(args) == 1)
         {
-            print(pt.end);
+            print(pt.os, pt.end);
             firstArg = false;
         }
 
@@ -173,9 +176,9 @@ namespace llog
     {
         SetColor(pt.color);
 
-        print(pt.start, arg);
-        (print(pt.delimiter, args), ...);
-        print(pt.end);
+        print(pt.os, pt.start, arg);
+        (print(pt.os, pt.delimiter, args), ...);
+        print(pt.os, pt.end);
 
         SetColor();
     }
@@ -189,12 +192,12 @@ namespace llog
     {
         SetColor(pt.color);
 
-        print(pt.start);
+        print(pt.os, pt.start);
         for(;itBegin != itEnd; ++itBegin)
         {
-            print(*itBegin, pt.delimiter);
+            print(pt.os, *itBegin, pt.delimiter);
         }
-        print(pt.end);
+        print(pt.os, pt.end);
 
         SetColor();
     }
@@ -265,6 +268,7 @@ namespace llog
     {
         constexpr PrintTemplate error
         {
+            .os = &std::cerr,
             .start = "Error: ",
             .delimiter = " ",
             .end = "\n",
@@ -273,6 +277,7 @@ namespace llog
 
         constexpr PrintTemplate warning
         {
+            .os = &std::cerr,
             .start = "Warning: ",
             .delimiter = " ",
             .end = "\n",
@@ -281,6 +286,7 @@ namespace llog
 
         constexpr PrintTemplate message
         {
+            .os = &std::cout,
             .start = "Message: ",
             .delimiter = " ",
             .end = "\n",
