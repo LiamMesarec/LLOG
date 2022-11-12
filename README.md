@@ -20,19 +20,20 @@ int main()
 
     llog::Print(array);
     llog::Print(
-        {"\nSTART ARRAY PRINTER \n", "\n", "END ARRAY PRINTER\n\n", llog::Color::BLUE}, 
+        {&std::cout, "\nSTART ARRAY PRINTER \n", "\n", "END ARRAY PRINTER\n\n", llog::Color::BLUE}, 
         array, array, array
     );
 
     llog::Print("the end");
 
     llog::Print(
-        {"", "      ", "\n", llog::Color::RED}, 
+        {&std::cout, "", "      ", "\n", llog::Color::RED}, 
         1, 2, 3
     );
 
     llog::Print("the end");
 }
+
 ```
 
 Also supports STL Containers such as std::vector, std::array etc.
